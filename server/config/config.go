@@ -8,9 +8,6 @@ type Config struct {
 	MinRacesCount   int
 	InitialRating   float64
 	FirstSeasonDate time.Time
-	SeasonOffset    int
-	CompetitionDays int
-	RestDays        int
 	Elo             ConfigElo
 }
 
@@ -36,32 +33,33 @@ func (c *Config) GetNextSeasonStartDate() time.Time {
 }
 
 func (c *Config) GetStartDate(season int) time.Time {
-	seasonDuration := time.Hour * time.Duration(24) * time.Duration(c.CompetitionDays+c.RestDays)
-	return c.FirstSeasonDate.Add(seasonDuration * time.Duration(season-c.SeasonOffset-1))
+	firstOfMonth := time.Date(c.FirstSeasonDate.Year(), c.FirstSeasonDate.Month(), 1, 0, 0, 0, 0, time.UTC)
+	startDate := firstOfMonth.AddDate(0, season, 0)
+	return startDate
 }
 
 func (c *Config) GetSeasonAt(date time.Time) int {
-	return c.SeasonOffset + c.GetSecondsSinceFirstAt(date)/c.GetSeasonDurationSeconds()
+	startMonth, startYear := c.FirstSeasonDate.Month(), c.FirstSeasonDate.Year()
+	currentMonth, currentYear := date.Month(), date.Year()
+	diffYear := (currentYear - startYear) * 12
+	diffMonth := currentMonth - startMonth
+	return diffYear + int(diffMonth) + 1
 }
 
 func (c *Config) IsCompetitionActiveAt(date time.Time) bool {
-	secondsSinceSeasonStart := c.GetSecondsSinceFirstAt(date) % c.GetSeasonDurationSeconds()
-	return secondsSinceSeasonStart <= c.CompetitionDays*24*3600
+	return true
 }
 
 func (c *Config) GetCompetitionEndDateAt(date time.Time) time.Time {
-	secondsSinceSeasonStart := c.GetSecondsSinceFirstAt(date) % c.GetSeasonDurationSeconds()
-	secondsUntilCompetitionEnd := c.CompetitionDays*24*3600 - secondsSinceSeasonStart
-	return date.Add(time.Second * time.Duration(secondsUntilCompetitionEnd))
+	firstOfMonth := time.Date(date.Year(), date.Month(), 1, 23, 59, 59, 0, time.UTC)
+	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
+	return lastOfMonth
 }
 
 func (c *Config) GetNextSeasonStartDateAt(date time.Time) time.Time {
-	nextSeasonSecondsSinceFirst := c.GetSeasonDurationSeconds() * (c.GetSeasonAt(date) + 1 - c.SeasonOffset)
-	return c.FirstSeasonDate.Add(time.Second * time.Duration(nextSeasonSecondsSinceFirst))
-}
-
-func (c *Config) GetSeasonDurationSeconds() int {
-	return (c.CompetitionDays + c.RestDays) * 24 * 3600
+	firstOfMonth := time.Date(date.Year(), date.Month(), 1, 0, 0, 0, 0, time.UTC)
+	firstOfNextMonth := firstOfMonth.AddDate(0, 1, 0)
+	return firstOfNextMonth
 }
 
 func (c *Config) GetSecondsSinceFirstAt(date time.Time) int {

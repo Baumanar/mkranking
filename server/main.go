@@ -14,10 +14,7 @@ import (
 )
 
 var cfg = &config.Config{
-	FirstSeasonDate: time.Date(2022, time.September, 17, 0, 0, 0, 0, time.Local),
-	SeasonOffset:    3,
-	CompetitionDays: 21,
-	RestDays:        7,
+	FirstSeasonDate: time.Date(2025, time.February, 1, 0, 0, 0, 0, time.Local),
 	MinRacesCount:   5,
 	InitialRating:   1000.0,
 	Elo: config.ConfigElo{
