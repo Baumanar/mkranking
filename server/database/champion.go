@@ -8,7 +8,7 @@ func GetChampions(season int) ([]models.Champion, error) {
 		( SELECT season, name, icon, RANK() OVER (PARTITION BY season ORDER BY rating DESC) rank FROM players )
 	SELECT season, name, icon
 			FROM ranked_players
-			WHERE rank = 1 AND season < $1
+			WHERE rank in (1,2,3) AND season < $1
 			ORDER BY season DESC`, season)
 	winners := make([]models.Champion, 0)
 	for rows.Next() {
