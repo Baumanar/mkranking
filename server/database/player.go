@@ -88,7 +88,23 @@ func GetPlayer(id int) (models.Player, error) {
 }
 
 func GetPlayers(playerIds []int) ([]models.Player, error) {
-	rows, err := db.Query("SELECT id, name, rating, icon, races_count, RANK() OVER (ORDER BY rating DESC) rank FROM players WHERE id = ANY($1)", pq.Array(playerIds))
+	rows, err := db.Query(`
+	SELECT players.id,
+		   name,
+		   latest_ranking.rating,
+		   icon,
+		   races_count,
+		   RANK() OVER (ORDER BY latest_ranking.rating DESC) rank
+	FROM players
+			 LEFT JOIN
+		 (SELECT pr.user_id,
+				 pr.new_rating                                                  as rating,
+				 ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY race_id DESC) AS rn
+		  FROM players_races AS pr
+				   join public.races r on pr.race_id = r.id) latest_ranking
+		 on players.id = latest_ranking.user_id and latest_ranking.rn = 1
+	where players.id = ANY ($1);
+`, pq.Array(playerIds))
 	if err != nil {
 		return nil, err
 	}
