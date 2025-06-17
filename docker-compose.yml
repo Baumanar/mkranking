@@ -9,7 +9,7 @@ services:
     ports:
       - "$POSTGRES_PORT:$POSTGRES_PORT"
     volumes:
-      - data:/var/lib/postgresql/data
+      - ./testdata-database/dump.sql:/docker-entrypoint-initdb.d/init.sql
 
   server:
     build: .
