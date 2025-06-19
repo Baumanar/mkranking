@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"github.com/thalkz/kart/config"
 
 	"github.com/lib/pq"
 	"github.com/thalkz/kart/models"
@@ -87,11 +88,11 @@ func GetPlayer(id int) (models.Player, error) {
 	return player, err
 }
 
-func GetPlayers(playerIds []int) ([]models.Player, error) {
+func GetPlayers(playerIds []int, initialRating float64) ([]models.Player, error) {
 	rows, err := db.Query(`
 	SELECT players.id,
 		   name,
-		   latest_ranking.rating,
+		   coalesce(latest_ranking.rating, $1),
 		   icon,
 		   races_count,
 		   RANK() OVER (ORDER BY latest_ranking.rating DESC) rank
@@ -103,8 +104,8 @@ func GetPlayers(playerIds []int) ([]models.Player, error) {
 		  FROM players_races AS pr
 				   join public.races r on pr.race_id = r.id) latest_ranking
 		 on players.id = latest_ranking.user_id and latest_ranking.rn = 1
-	where players.id = ANY ($1);
-`, pq.Array(playerIds))
+	where players.id = ANY ($2);
+`, initialRating, pq.Array(playerIds))
 	if err != nil {
 		return nil, err
 	}
@@ -150,11 +151,11 @@ func GetAllPlayers(season int) ([]models.Player, error) {
 	return players, err
 }
 
-func GetRankedPlayers(season int, minRaces int) ([]models.Player, error) {
+func GetRankedPlayers(season int, config *config.Config) ([]models.Player, error) {
 	rows, err := db.Query(`
 		SELECT players.id,
 			   name,
-			   latest_ranking.rating,
+		       coalesce(latest_ranking.rating, $1),
 			   icon,
 			   races_count,
 			   RANK() OVER (ORDER BY latest_ranking.rating DESC) rank
@@ -167,9 +168,9 @@ func GetRankedPlayers(season int, minRaces int) ([]models.Player, error) {
 			  FROM players_races AS pr
 					   join public.races r on pr.race_id = r.id) latest_ranking
 			 on players.id = latest_ranking.user_id and latest_ranking.rn = 1
-		where players.season = $1
-		  and races_count >= $2
-		`, season, minRaces)
+		where players.season = $2
+		  and races_count >= $3
+		`, config.InitialRating, season, config.MinRacesCount)
 	players := make([]models.Player, 0)
 	for rows.Next() {
 		var player models.Player

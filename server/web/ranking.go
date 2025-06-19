@@ -27,7 +27,7 @@ func RankingHandler(cfg *config.Config, w http.ResponseWriter, r *http.Request) 
 
 	season := utils.ParseSeason(cfg, r)
 
-	rankedPlayers, err := database.GetRankedPlayers(season, cfg.MinRacesCount)
+	rankedPlayers, err := database.GetRankedPlayers(season, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to get ranked players: %w", err)
 	}

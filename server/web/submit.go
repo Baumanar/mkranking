@@ -49,7 +49,7 @@ func createRaceHandler(cfg *config.Config, w http.ResponseWriter, r *http.Reques
 
 	ties := parseTies(r, len(ids))
 
-	players, err := database.GetPlayers(ids)
+	players, err := database.GetPlayers(ids, cfg.InitialRating)
 	if err != nil {
 		return fmt.Errorf("failed getting players: %w", err)
 	}
